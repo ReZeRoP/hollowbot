@@ -1,0 +1,27 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data          # SQLite persistence
+      - ./backups:/app/backups    # DB backups
+    depends_on:
+      - db
+    # If using SQLite you can remove the `db` service and `depends_on`.
+
+  # PostgreSQL — only used if DATABASE_URL points to postgres.
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vpnbot
+      POSTGRES_PASSWORD: vpnbot
+      POSTGRES_DB: vpnbot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:
