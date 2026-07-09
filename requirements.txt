@@ -1,0 +1,33 @@
+# --- Core bot ---
+aiogram==3.13.1
+
+# --- Config / validation ---
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# --- Database / ORM / migrations (SQLite default — zero build tools needed) ---
+SQLAlchemy[asyncio]==2.0.35
+alembic==1.13.3
+aiosqlite==0.20.0
+
+# --- HTTP client for 3X-UI panel ---
+aiohttp==3.10.8
+tenacity==9.0.0            # retries / backoff
+
+# --- Scheduling ---
+APScheduler==3.10.4
+
+# --- QR codes for subscription links ---
+qrcode[pil]==7.4.2
+Pillow>=10.4,<13
+
+# --- Misc ---
+pytz==2024.2
+
+# NOTE: PostgreSQL support (asyncpg) is intentionally NOT installed by default
+# — asyncpg needs a matching prebuilt wheel for your Python version/OS, and
+# building it from source requires a C compiler + PostgreSQL dev headers.
+# If you want Postgres, install it separately:
+#     pip install -r requirements-postgres.txt
+# See README.md "Switching to PostgreSQL" for details.

@@ -1,0 +1,9 @@
+# Optional: only needed if DATABASE_URL points to PostgreSQL.
+# Install with:  pip install -r requirements-postgres.txt
+#
+# asyncpg is pinned to a recent version with prebuilt wheels for current
+# Python versions (3.9–3.13) on Linux/macOS/Windows, so it normally installs
+# without compiling anything. If it still tries to build from source, your
+# Python version/OS combo has no prebuilt wheel yet — see the troubleshooting
+# notes in README.md.
+asyncpg==0.30.0
