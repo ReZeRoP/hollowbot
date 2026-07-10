@@ -25,6 +25,23 @@ async def _is_member(bot: Bot, channel: str, user_id: int) -> bool:
         return False
 
 
+async def _all_joined(bot: Bot, channels: list[str], user_id: int) -> bool:
+    """
+    Check membership in every channel, short-circuiting on the first miss.
+
+    NOTE: do NOT write this as `all(await _is_member(...) for c in channels)`.
+    A generator expression containing `await`, evaluated inside an async
+    function, is compiled as an ASYNC generator (per PEP 530) — and `all()`
+    cannot consume an async generator, raising:
+        TypeError: 'async_generator' object is not iterable
+    Awaiting each check explicitly in a real loop avoids that entirely.
+    """
+    for channel in channels:
+        if not await _is_member(bot, channel, user_id):
+            return False
+    return True
+
+
 class ForceJoinMiddleware(BaseMiddleware):
     async def __call__(
         self,
@@ -47,14 +64,14 @@ class ForceJoinMiddleware(BaseMiddleware):
         if text in _ALLOWED or cbdata in _ALLOWED:
             # If it's the recheck button, verify membership.
             if cbdata == "check_join":
-                joined = all(await _is_member(bot, c, tg_user.id) for c in channels)
+                joined = await _all_joined(bot, channels, tg_user.id)
                 if joined:
                     return await handler(event, data)
                 await event.answer(MSG["not_joined"], show_alert=True)
                 return
             return await handler(event, data)
 
-        joined = all(await _is_member(bot, c, tg_user.id) for c in channels)
+        joined = await _all_joined(bot, channels, tg_user.id)
         if joined:
             return await handler(event, data)
 
