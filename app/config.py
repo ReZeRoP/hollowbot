@@ -11,7 +11,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,9 +22,16 @@ class Settings(BaseSettings):
 
     # --- Telegram ---
     bot_token: str = Field(alias="BOT_TOKEN")
-    super_admin_ids: List[int] = Field(default_factory=list, alias="SUPER_ADMIN_IDS")
+    # NOTE: these two are read as plain strings (NOT List[...]) on purpose.
+    # pydantic-settings tries to JSON-decode env vars typed as list/dict
+    # BEFORE any custom validator runs, so a plain comma-separated value like
+    # "111111111,222222222" or "@my_channel" would crash with a
+    # SettingsError ("Expecting value..."). Keeping them as `str` here and
+    # exposing parsed List[...] via read-only properties below sidesteps
+    # that entirely.
+    super_admin_ids_str: str = Field(default="", alias="SUPER_ADMIN_IDS")
     admin_group_id: int | None = Field(default=None, alias="ADMIN_GROUP_ID")
-    force_join_channels: List[str] = Field(default_factory=list, alias="FORCE_JOIN_CHANNELS")
+    force_join_channels_str: str = Field(default="", alias="FORCE_JOIN_CHANNELS")
 
     # --- Database ---
     database_url: str = Field(
@@ -58,20 +65,14 @@ class Settings(BaseSettings):
     # --- Logging ---
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
-    # ---- validators: allow comma-separated strings from .env ----
-    @field_validator("super_admin_ids", mode="before")
-    @classmethod
-    def _parse_admin_ids(cls, v):
-        if isinstance(v, str):
-            return [int(x.strip()) for x in v.split(",") if x.strip()]
-        return v
+    # ---- parsed accessors (comma-separated -> list) ----
+    @property
+    def super_admin_ids(self) -> List[int]:
+        return [int(x.strip()) for x in self.super_admin_ids_str.split(",") if x.strip()]
 
-    @field_validator("force_join_channels", mode="before")
-    @classmethod
-    def _parse_channels(cls, v):
-        if isinstance(v, str):
-            return [x.strip() for x in v.split(",") if x.strip()]
-        return v
+    @property
+    def force_join_channels(self) -> List[str]:
+        return [x.strip() for x in self.force_join_channels_str.split(",") if x.strip()]
 
     @property
     def is_sqlite(self) -> bool:
