@@ -12,7 +12,10 @@ from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from app.config import settings
 from app.keyboards.user_kb import force_join_kb
+from app.logger import get_logger
 from app.utils.texts import MSG
+
+log = get_logger(__name__)
 
 _ALLOWED = {"/start", "check_join"}
 
@@ -21,7 +24,17 @@ async def _is_member(bot: Bot, channel: str, user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(channel, user_id)
         return member.status not in ("left", "kicked")
-    except Exception:  # noqa: BLE001 — private channel / bot not admin
+    except Exception as e:  # noqa: BLE001
+        # Log the REAL reason instead of silently treating it as "not joined".
+        # Common causes:
+        #  - the bot itself is not an admin of the channel (most common)
+        #  - channel value in .env is not "@username" (e.g. a t.me/ link, or
+        #    missing the leading @)
+        #  - channel is private and needs the numeric chat id, not @username
+        log.warning(
+            "force_join: get_chat_member(%r, user_id=%s) failed: %s",
+            channel, user_id, e,
+        )
         return False
 
 
